@@ -1,25 +1,34 @@
 import Foundation
 import UIKit
 
+enum State<T> {
+    case Pending
+    case Fulfilled(T)
+    case Rejected(NSError)
+}
 
-class Promise<T>
-{
+class Promise<T> {
     var _handlers:(() -> Void)[] = []
-    var _value:Any?  //HACK because having type T crashes Xcode
+    var _state:State<T> = .Pending
 
-    var value:T? {
-        get {
-            return _value as? T
-        }
-        set {  //TODO private
-            _value = newValue
+    var rejected:Bool {
+        switch _state {
+            case .Fulfilled, .Pending: return false
+            case .Rejected: return true;
         }
     }
-    var error:NSError?  //TODO wrap T and NSError in Swift Enum
-
-    var  rejected:Bool { return error != nil }
-    var fulfilled:Bool { return value != nil }
-    var   pending:Bool { return !rejected && !fulfilled }
+    var fulfilled:Bool {
+        switch _state {
+            case .Rejected, .Pending: return false
+            case .Fulfilled: return true;
+        }
+    }
+    var pending:Bool {
+        switch _state {
+            case .Rejected, .Fulfilled: return false
+            case .Pending: return true;
+        }
+    }
 
     class func defer() -> (promise:Promise, fulfiller:(T) -> Void, rejecter:(NSError) -> Void) {
         var f: ((T) -> Void)?
@@ -38,14 +47,14 @@ class Promise<T>
 
         let rejecter = { (err:NSError) -> Void in
             if self.pending {
-                self.error = err;
+                self._state = .Rejected(err);
                 recurse();
             }
         }
 
         let fulfiller = { (obj:T) -> Void in
             if self.pending {
-                self.value = obj;
+                self._state = .Fulfilled(obj);
                 recurse()
             }
         }
@@ -54,75 +63,60 @@ class Promise<T>
     }
 
     init(value:T) {
-        self.value = value
+        self._state = .Fulfilled(value)
     }
 
     init(error:NSError) {
-        self.error = error
+        self._state = .Rejected(error)
     }
 
     func then<U>(body:(T) -> U) -> Promise<U> {
-        if rejected {
-            return Promise<U>(error: error!);
-        }
-
-        if fulfilled {
+        switch _state {
+        case .Rejected(let error):
+            return Promise<U>(error: error);
+        case .Fulfilled(let value):
             return Promise<U>{ (fulfiller, rejecter) in
-                let rv = body(self.value!)
+                let rv = body(value)
                 if rv is NSError {
                     rejecter(rv as NSError)
                 } else {
                     fulfiller(rv)
                 }
             }
-        }
-
-        return Promise<U>{ (fulfiller, rejecter) in
-            self._handlers.append {
-                assert(!self.pending)
-                if self.rejected {
-                    rejecter(self.error!)
-                } else {
-                    fulfiller(body(self.value!))
+        case .Pending:
+            return Promise<U>{ (fulfiller, rejecter) in
+                self._handlers.append {
+                    switch self._state {
+                    case .Rejected(let error):
+                        rejecter(error)
+                    case .Fulfilled(let value):
+                        fulfiller(body(value))
+                    case .Pending:
+                        abort()
+                    }
                 }
             }
         }
     }
-//
-//    func then(body:(T) -> Void) -> Promise<Void> {
-//        if rejected {
-//            return Promise<Void>(error: error!);
-//        }
-//
-//        if fulfilled {
-//            return Promise<Void>{ (fulfiller, rejecter) in
-//                body(self.value!)
-//                fulfiller()
-//            }
-//        }
-//
-//        return Promise<Void> { (fulfiller, rejecter) -> Void in
-//
-//        }
-//    }
 
     func then<U>(body:(T) -> Promise<U>) -> Promise<U> {
-        if rejected {
-            return Promise<U>(error: error!);
-        }
-
-        if fulfilled {
-            return body(self.value!)
-        }
-
-        return Promise<U>{ (fulfiller, rejecter) in
-            self._handlers.append {
-                assert(!self.pending)
-                if self.rejected {
-                    rejecter(self.error!)
-                } else {
-                    body(self.value!).then{ (obj:U) -> Void in
-                        fulfiller(obj)
+        switch _state {
+        case .Rejected(let error):
+            return Promise<U>(error: error);
+        case .Fulfilled(let value):
+            return body(value)
+        case .Pending:
+            return Promise<U>{ (fulfiller, rejecter) in
+                self._handlers.append {
+                    switch (self._state) {
+                    case .Rejected(let error):
+                        rejecter(error)
+                    case .Fulfilled(let value):
+                        body(value).then{ obj -> Void in
+                            fulfiller(obj)
+                        }
+                    case .Pending:
+                        abort()
                     }
                 }
             }
@@ -130,51 +124,68 @@ class Promise<T>
     }
 
     func catch(body:(NSError) -> T) -> Promise<T> {
-        if fulfilled {
-            return Promise<T>(value:value!)
-        }
-        if rejected {
-            let rv = body(self.error!)
-            return Promise(value:rv)
-        }
-
-        return Promise<T>{ (fulfiller, rejecter) in
-            self._handlers.append {
-                assert(!self.pending)
-                if self.fulfilled {
-                    fulfiller(self.value!)
-                } else {
-                    fulfiller(body(self.error!))
+        switch _state {
+        case .Fulfilled(let value):
+            return Promise(value:value)
+        case .Rejected(let error):
+            return Promise(value:body(error))
+        case .Pending:
+            return Promise<T>{ (fulfiller, rejecter) in
+                self._handlers.append {
+                    switch self._state {
+                    case .Fulfilled(let value):
+                        fulfiller(value)
+                    case .Rejected(let error):
+                        fulfiller(body(error))
+                    case .Pending:
+                        abort()
+                    }
                 }
             }
         }
     }
 
     func catch(body:(NSError) -> Void) -> Void {
-        if rejected {
-            body(error!)
-        } else if pending {
+        //TODO determine if this is actually needed
+
+        switch _state {
+        case .Rejected(let error):
+            body(error)
+        case .Fulfilled:
+            let noop = 0
+        case .Pending:
             self._handlers.append{
-                assert(!self.pending)
-                if self.rejected {
-                    body(self.error!)
+                switch self._state {
+                    case .Rejected(let error):
+                        body(error)
+                    case .Fulfilled:
+                        let noop = 0
+                    case .Pending:
+                        abort()
                 }
             }
         }
     }
 
     func finally(body:() -> Void) -> Promise<T> {
-        if !pending {
+        switch _state {
+        case .Rejected(let error):
             body()
-            return fulfilled ? Promise(value:value!) : Promise(error:error!)
-        } else {
+            return Promise(error: error)
+        case .Fulfilled(let value):
+            body()
+            return Promise(value: value)
+        case .Pending:
             return Promise { (fulfiller, rejecter) in
                 self._handlers.append{
                     body()
-                    if self.fulfilled {
-                        fulfiller(self.value!)
-                    } else {
-                        rejecter(self.error!)
+                    switch self._state {
+                    case .Fulfilled(let value):
+                        fulfiller(value)
+                    case .Rejected(let error):
+                        rejecter(error)
+                    case .Pending:
+                        abort()
                     }
                 }
             }
