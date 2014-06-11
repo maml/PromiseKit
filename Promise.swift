@@ -1,9 +1,9 @@
 import Foundation
 import UIKit
 
-enum State<T> {
+enum State {   //TODO generics! Type T! Nested! (can't now due to compiler bugs)
     case Pending
-    case Fulfilled(T)
+    case Fulfilled(Any)
     case Rejected(NSError)
 }
 
@@ -25,7 +25,7 @@ func dispatch_main(block: ()->()) {
 
 class Promise<T> {
     var _handlers:(() -> Void)[] = []
-    var _state:State<T> = .Pending
+    var _state:State = .Pending
 
     var rejected:Bool {
         switch _state {
@@ -90,7 +90,7 @@ class Promise<T> {
         case .Rejected(let error):
             return Promise<U>(error: error);
         case .Fulfilled(let value):
-            return dispatch_promise(to:q){ d->() in d.fulfiller(body(value)) }
+            return dispatch_promise(to:q){ d->() in d.fulfiller(body(value as T)) }
         case .Pending:
             return Promise<U>{ (fulfiller, rejecter) in
                 self._handlers.append {
@@ -99,7 +99,7 @@ class Promise<T> {
                         rejecter(error)
                     case .Fulfilled(let value):
                         dispatch_async(q) {
-                            fulfiller(body(value))
+                            fulfiller(body(value as T))
                         }
                     case .Pending:
                         abort()
@@ -118,14 +118,14 @@ class Promise<T> {
             case .Rejected(let error):
                 rejecter(error)
             case .Fulfilled(let value):
-                fulfiller(value)
+                fulfiller(value as U)
             case .Pending:
                 promise._handlers.append{
                     switch promise._state {
                     case .Rejected(let error):
                         rejecter(error)
                     case .Fulfilled(let value):
-                        fulfiller(value)
+                        fulfiller(value as U)
                     case .Pending:
                         abort()
                     }
@@ -138,7 +138,7 @@ class Promise<T> {
             return Promise<U>(error: error);
         case .Fulfilled(let value):
             return dispatch_promise(to:q){
-                bind(value, $0, $1)
+                bind(value as T, $0, $1)
             }
         case .Pending:
             return Promise<U>{ (fulfiller, rejecter) in
@@ -148,7 +148,7 @@ class Promise<T> {
                         abort()
                     case .Fulfilled(let value):
                         dispatch_async(q){
-                            bind(value, fulfiller, rejecter)
+                            bind(value as T, fulfiller, rejecter)
                         }
                     case .Rejected(let error):
                         rejecter(error)
@@ -161,7 +161,7 @@ class Promise<T> {
     func catch(q onQueue:dispatch_queue_t = dispatch_get_main_queue(), body:(NSError) -> T) -> Promise<T> {
         switch _state {
         case .Fulfilled(let value):
-            return Promise(value:value)
+            return Promise(value:value as T)
         case .Rejected(let error):
             return dispatch_promise(to:q){ $1(error) }
         case .Pending:
@@ -169,7 +169,7 @@ class Promise<T> {
                 self._handlers.append {
                     switch self._state {
                     case .Fulfilled(let value):
-                        fulfiller(value)
+                        fulfiller(value as T)
                     case .Rejected(let error):
                         dispatch_async(q){ fulfiller(body(error)) }
                     case .Pending:
@@ -206,7 +206,7 @@ class Promise<T> {
             switch self._state {
             case .Fulfilled(let value):
                 body()
-                fulfiller(value)
+                fulfiller(value as T)
             case .Rejected(let error):
                 body()
                 rejecter(error)
@@ -215,7 +215,7 @@ class Promise<T> {
                     body()
                     switch self._state {
                     case .Fulfilled(let value):
-                        fulfiller(value)
+                        fulfiller(value as T)
                     case .Rejected(let error):
                         rejecter(error)
                     case .Pending:
