@@ -9,7 +9,7 @@ enum State<T> {
 
 
 //TODO private
-func dispatch_promise<T>(to queue:dispatch_queue_t = dispatch_get_global_queue(0, 0), block:(fulfiller: (T)->(), rejecter: (NSError)->())->()) -> Promise<T> {
+func dispatch_promise<T>(to queue:dispatch_queue_t = dispatch_get_global_queue(0, 0), block:(fulfiller: (T)->Void, rejecter: (NSError)->Void) -> ()) -> Promise<T> {
     return Promise<T> { (fulfiller, rejecter) in
         dispatch_async(queue) {
             block(fulfiller, rejecter)
@@ -47,7 +47,6 @@ class Promise<T> {
     }
 
     init(_ body:(fulfiller:(T) -> Void, rejecter:(NSError) -> Void) -> Void) {
-
         func recurse() {
             assert(!pending)
             for handler in _handlers { handler() }
