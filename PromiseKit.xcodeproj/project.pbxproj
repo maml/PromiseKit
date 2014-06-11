@@ -152,11 +152,8 @@
 				637D0F131943821A0059AD78 /* constants.swift */,
 				63519919193FCD4C002CF47D /* Tests */,
 				6351990B193FCD4C002CF47D /* Demo */,
+				63DDE17E1947B946005D34A3 /* … */,
 				63BC394E19422A9600D8CD9A /* PromiseKit.h */,
-				63BC394D19422A9600D8CD9A /* Info.plist */,
-				637D0F1019437D4C0059AD78 /* PMKDemo.app */,
-				637D0F1119437D4C0059AD78 /* PromiseKit.framework */,
-				637D0F1219437D4C0059AD78 /* PromiseKitTests.xctest */,
 			);
 			sourceTree = "<group>";
 		};
@@ -177,6 +174,17 @@
 				634356541944A80700529B89 /* Fixtures */,
 			);
 			path = Tests;
+			sourceTree = "<group>";
+		};
+		63DDE17E1947B946005D34A3 /* … */ = {
+			isa = PBXGroup;
+			children = (
+				63BC394D19422A9600D8CD9A /* Info.plist */,
+				637D0F1019437D4C0059AD78 /* PMKDemo.app */,
+				637D0F1119437D4C0059AD78 /* PromiseKit.framework */,
+				637D0F1219437D4C0059AD78 /* PromiseKitTests.xctest */,
+			);
+			name = "…";
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */

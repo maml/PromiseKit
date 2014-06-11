@@ -19,8 +19,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
             self.title = "Located"
             let opts = MKMapSnapshotOptions()
             opts.region = MKCoordinateRegion(center: placemark.location.coordinate, span: MKCoordinateSpan(latitudeDelta: 1, longitudeDelta: 1))
-            let snapshotter = MKMapSnapshotter(options:opts)
-            return snapshotter.promise()
+            return MKMapSnapshotter(options:opts).promise()
         }.then { (snapshot:MKMapSnapshot) -> Promise<Int> in
             self.title = "Map Snapshot"
             iv.image = snapshot.image
