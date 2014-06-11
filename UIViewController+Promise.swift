@@ -59,7 +59,7 @@ extension UIViewController {
 
         objc_setAssociatedObject(vc, key, Resolver<T>(deferred), UInt(OBJC_ASSOCIATION_RETAIN_NONATOMIC))
 
-        return deferred.promise.finally{
+        return deferred.promise.finally { () -> () in
             self.dismissViewControllerAnimated(animated, completion:nil)
         }
     }
