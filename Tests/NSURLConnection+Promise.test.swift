@@ -15,19 +15,18 @@ class TestNSURLConnectionPlusPromise: XCTestCase {
 
 
     func test_001() {
-        let e1 = expectationWithDescription("")
+        let e1 = expectationWithDescription("foo189234")
         NSURLConnection.promise(dictionaryJSON).then { (json:Dictionary<String, Any>) -> Int in
             let hi:Any = json["data"]!
             XCTAssertEqualObjects(hi as String, "hi")
             return 1
-        }.catch { (err:NSError) -> Int in
-            println(err)
+        }.catch { (err:NSError) in
             return 3
         }.then { (value:Int) -> Void in
             XCTAssertEqual(value, 1)
             e1.fulfill()
         }
-        waitForExpectationsWithTimeout(1, handler: nil)
+        waitForExpectationsWithTimeout(1000, handler: nil)
     }
 
     func test_002() {

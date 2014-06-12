@@ -1,7 +1,7 @@
 import Foundation
 import UIKit
 
-let q = NSOperationQueue()
+let PMKOperationQueue = NSOperationQueue()
 
 
 func _parse<T>(data:NSData, fulfiller:(T) -> Void, rejecter:(NSError) -> Void) {
@@ -29,12 +29,11 @@ func PMKUserAgent() -> String {
     }
     dispatch_once(&Static.token, {
         let info = NSBundle.mainBundle().infoDictionary
-        let name = info[kCFBundleIdentifierKey] as String
-        let appv = info[kCFBundleVersionKey] as String
+        let name:AnyObject? = info[kCFBundleIdentifierKey]
+        let appv:AnyObject? = info[kCFBundleVersionKey]
         let scale = UInt(UIScreen.mainScreen().scale)
         let model = UIDevice.currentDevice().model
         let sysv = UIDevice.currentDevice().systemVersion
-
         Static.instance = "\(name)/\(appv) (\(model); iOS \(sysv); Scale/\(scale).0"
     })
     return Static.instance!
@@ -50,7 +49,9 @@ func fetch<T>(var request: NSURLRequest, body: ((T) -> Void, (NSError) -> Void, 
     }
 
     return Promise<T> { (fulfiller, rejunker) in
-        NSURLConnection.sendAsynchronousRequest(request, queue:q) { (rsp, data, err) in
+        NSURLConnection.sendAsynchronousRequest(request, queue:PMKOperationQueue) { (rsp, data, err) in
+
+            assert(!NSThread.isMainThread())
 
             //TODO handle non 2xx responses
             //TODO in the event of a non 2xx rsp, try to parse JSON out of the response anyway

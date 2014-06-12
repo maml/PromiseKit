@@ -46,6 +46,19 @@ class Promise<T> {
         }
     }
 
+    /**
+      returns the fulfilled value unless the Promise is not fulfilled
+      in which case returns `nil`
+     */
+    var value:T? {
+        switch _state {
+        case .Fulfilled(let value):
+            return value as? T
+        default:
+            return nil
+        }
+    }
+
     init(_ body:(fulfiller:(T) -> Void, rejecter:(NSError) -> Void) -> Void) {
         func recurse() {
             assert(!pending)
@@ -158,12 +171,12 @@ class Promise<T> {
         }
     }
 
-    func catch(q onQueue:dispatch_queue_t = dispatch_get_main_queue(), body:(NSError) -> T) -> Promise<T> {
+    func catch(onQueue:dispatch_queue_t = dispatch_get_main_queue(), body:(NSError) -> T) -> Promise<T> {
         switch _state {
         case .Fulfilled(let value):
             return Promise(value:value as T)
         case .Rejected(let error):
-            return dispatch_promise(to:q){ $1(error) }
+            return dispatch_promise(to:onQueue){ $1(error) }
         case .Pending:
             return Promise<T>{ (fulfiller, rejecter) in
                 self._handlers.append {
@@ -171,7 +184,7 @@ class Promise<T> {
                     case .Fulfilled(let value):
                         fulfiller(value as T)
                     case .Rejected(let error):
-                        dispatch_async(q){ fulfiller(body(error)) }
+                        dispatch_async(onQueue){ fulfiller(body(error)) }
                     case .Pending:
                         abort()
                     }
@@ -180,23 +193,25 @@ class Promise<T> {
         }
     }
 
-    func catch(q onQueue:dispatch_queue_t = dispatch_get_main_queue(), body:(NSError) -> Void) -> Void {
+    func catch(onQueue:dispatch_queue_t = dispatch_get_main_queue(), body:(NSError) -> Void) -> Void {
         switch _state {
         case .Rejected(let error):
-            dispatch_async(q){ body(error) }
+            dispatch_async(onQueue, {
+                body(error)
+            })
         case .Fulfilled:
             let noop = 0
         case .Pending:
-            self._handlers.append{
+            self._handlers.append({
                 switch self._state {
-                    case .Rejected(let error):
-                        dispatch_async(q){ body(error) }
-                    case .Fulfilled:
-                        let noop = 0
-                    case .Pending:
-                        abort()
+                case .Rejected(let error):
+                    dispatch_async(onQueue){ body(error) }
+                case .Fulfilled:
+                    let noop = 0
+                case .Pending:
+                    abort()
                 }
-            }
+            })
         }
     }
 
