@@ -157,19 +157,25 @@ class TestPromise: XCTestCase {
         waitForExpectationsWithTimeout(1, handler: nil)
     }
 
-//    func test_008_thenOffVoid() {
-//        unsealed().then { (value:UInt32) -> Void in
-//
-//        }.then { (value:Void) -> Void
-//
-//        }
-//    }
+    func test_008_thenOffVoid() {
+        let e1 = expectation()
+        unsealed().then { (value:UInt32) -> Void in
+            return
+        }.then { ()->() in
+            e1.fulfill()
+            return
+        }
+        waitForExpectationsWithTimeout(1, handler: nil)
+    }
 
-//    func test_008_catchReturnsVoid() {
-//        Promise<UInt32>{ (fulfiller, rejecter) in
-//            rejecter(NSError(domain: PMKErrorDomain, code: 123, userInfo: [:]))
-//        }.catch { (err:NSError) -> Void
-//            XCTAssertEqualObjects(err.code, 123)
-//        }
-//    }
+    func test_008_catchReturnsVoid() {
+        let e1 = expectation()
+        Promise<UInt32>{ (_, rejecter) in
+            rejecter(NSError(domain: PMKErrorDomain, code: 123, userInfo: [:]))
+        }.catch { (err:NSError)->() in
+            XCTAssertEqualObjects(err.code, 123)
+            e1.fulfill()
+        }
+        waitForExpectationsWithTimeout(1, handler: nil)
+    }
 }
