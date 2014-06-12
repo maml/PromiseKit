@@ -91,11 +91,11 @@ extension NSURLConnection {
         let rq = NSURLRequest(URL:NSURL(string:url))
         return promise(rq)
     }
-    class func GET(url:String) -> Promise<Any[]> {
+    class func GET(url:String) -> Promise<NSArray> {
         let rq = NSURLRequest(URL:NSURL(string:url))
         return promise(rq)
     }
-    class func GET(url:String, query:Dictionary<String, Any>? = nil) -> Promise<Dictionary<String, Any>> {
+    class func GET(url:String, query:Dictionary<String, Any>? = nil) -> Promise<NSDictionary> {
         return promise(NSURLRequest(URL:NSURL(string:url + PMKDictionaryToURLQueryString(query))))
     }
 
@@ -126,14 +126,16 @@ extension NSURLConnection {
     // that only JSON object types work, also ideally I should be
     // about to specify eg String[] or [String:Array] etc.
 
-    class func promise(request:NSURLRequest) -> Promise<Dictionary<String, Any>> {
+    class func promise(request:NSURLRequest) -> Promise<NSDictionary> {
         return fetch(request) { (fulfiller, rejecter, data) in
             var error:NSError?
             let json:AnyObject? = NSJSONSerialization.JSONObjectWithData(data, options:nil, error:&error)
 
             if error {
                 rejecter(error!)
-            } else if let cast = json as? Dictionary<String, Any> {
+            } else if let cast = json as? Dictionary<String, String> {
+                println(json)
+                println(cast)
                 fulfiller(cast)
             } else {
                 var info:Dictionary = [:]
@@ -145,14 +147,14 @@ extension NSURLConnection {
         }
     }
 
-    class func promise(request:NSURLRequest) -> Promise<Any[]> {
+    class func promise(request:NSURLRequest) -> Promise<NSArray> {
         return fetch(request) { (fulfiller, rejecter, data) in
             var error:NSError?
             let json:AnyObject? = NSJSONSerialization.JSONObjectWithData(data, options:nil, error:&error)
 
             if error {
                 rejecter(error!)
-            } else if let cast = json as? Any[] {
+            } else if let cast = json as? NSArray {
                 fulfiller(cast)
             } else {
                 var info:Dictionary = [:]

@@ -15,9 +15,9 @@ class TestNSURLConnectionPlusPromise: XCTestCase {
 
 
     func test_001() {
-        let e1 = expectationWithDescription("foo189234")
-        NSURLConnection.promise(dictionaryJSON).then { (json:Dictionary<String, Any>) -> Int in
-            let hi:Any = json["data"]!
+        let e1 = expectation()
+        NSURLConnection.promise(dictionaryJSON).then { (json:NSDictionary) -> Int in
+            let hi = json["data"]! as String
             XCTAssertEqualObjects(hi as String, "hi")
             return 1
         }.catch { (err:NSError) in
@@ -26,12 +26,12 @@ class TestNSURLConnectionPlusPromise: XCTestCase {
             XCTAssertEqual(value, 1)
             e1.fulfill()
         }
-        waitForExpectationsWithTimeout(1000, handler: nil)
+        waitForExpectationsWithTimeout(1, handler: nil)
     }
 
-    func test_002() {
-        let e1 = expectationWithDescription("")
-        NSURLConnection.promise(plainText).then { (json:Dictionary<String, Any>) -> Int in
+    func testCorrectlyErrorsWhenExpectingDictionaryAndGettingText() {
+        let e1 = expectation()
+        NSURLConnection.promise(plainText).then { (json:NSDictionary) -> Int in
             XCTFail()
             return 1
         }.catch { (err:NSError) -> Int in
@@ -45,9 +45,9 @@ class TestNSURLConnectionPlusPromise: XCTestCase {
         waitForExpectationsWithTimeout(1, handler: nil)
     }
 
-    func test_003() {
-        let e1 = expectationWithDescription("")
-        NSURLConnection.promise(dictionaryJSON).then { (json:Any[]) -> Int in
+    func testCorrectlyErrorsWhenExpectingArrayAndGettingDictionary() {
+        let e1 = expectation()
+        NSURLConnection.promise(dictionaryJSON).then { (json:NSArray) -> Int in
             XCTFail()
             return 1
         }.catch { (err:NSError) -> Int in
@@ -62,13 +62,21 @@ class TestNSURLConnectionPlusPromise: XCTestCase {
         waitForExpectationsWithTimeout(1, handler: nil)
     }
 
-    func test_004() {
-        let e1 = expectationWithDescription("")
-        NSURLConnection.promise(arrayJSON).then { (json:Any[]) -> Int in
-            let hi:Any = json[1]
+    func testParsesJSONArray() {
+        let e1 = expectation()
+        NSURLConnection.promise(arrayJSON).then { (json:NSArray) -> Int in
+            let hi = json[1] as String
             XCTAssertEqualObjects(hi as String, "hi")
             e1.fulfill()
             return 1
+        }
+        waitForExpectationsWithTimeout(1, handler: nil)
+    }
+
+    func testParsesString() {
+        let e1 = expectation()
+        NSURLConnection.promise(plainText).then{ (txt:String) in
+            e1.fulfill()
         }
         waitForExpectationsWithTimeout(1, handler: nil)
     }

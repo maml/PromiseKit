@@ -2,10 +2,6 @@ import XCTest
 import PromiseKit
 
 extension XCTestCase {
-    func wait() {
-        waitForExpectationsWithTimeout(1, handler: nil)
-    }
-
     func expectation() -> XCTestExpectation {
         return expectationWithDescription("")
     }
@@ -29,19 +25,19 @@ class TestPromise: XCTestCase {
         }
     }
 
-    func test_a_hasValue() {
+    func test_hasValue() {
         let p:Promise<Int> = Promise(value:1)
         XCTAssertEqual(p.value!, 1)
     }
 
-    func test_b_sealedCanThen() {
+    func test_sealedCanThen() {
         let e1 = expectation()
         sealed().then { (v:UInt32) -> Void in
             XCTAssertEqual(v, self.random)
             e1.fulfill()
             return
         }
-        wait()
+        waitForExpectationsWithTimeout(1, handler: nil)
 
         let e2 = expectation()
         sealed().then {
@@ -49,16 +45,16 @@ class TestPromise: XCTestCase {
         }.then {
             e2.fulfill()
         }
-        wait()
+        waitForExpectationsWithTimeout(1, handler: nil)
     }
 
-    func test_c_unsealedCanThen() {
+    func test_unsealedCanThen() {
         let e1 = expectation()
         unsealed().then { (v:UInt32) -> Void in
             XCTAssertEqual(v, self.random)
             e1.fulfill()
         }
-        wait()
+        waitForExpectationsWithTimeout(1, handler: nil)
 
         let e2 = expectation()
         unsealed().then {
@@ -66,7 +62,7 @@ class TestPromise: XCTestCase {
         }.then {
             e2.fulfill()
         }
-        wait()
+        waitForExpectationsWithTimeout(1, handler: nil)
 
         let e3 = expectation()
         unsealed().then {
@@ -76,10 +72,10 @@ class TestPromise: XCTestCase {
         }.then {
             e3.fulfill()
         }
-        wait()
+        waitForExpectationsWithTimeout(1, handler: nil)
     }
 
-    func test_d_returnPromise() {
+    func test_returnPromise() {
         let e1 = expectation()
         let e2 = expectation()
         sealed().then { (value) -> Promise<UInt32> in
@@ -90,10 +86,10 @@ class TestPromise: XCTestCase {
             XCTAssertEqual(value, self.random)
             e2.fulfill()
         }
-        wait()
+        waitForExpectationsWithTimeout(1, handler: nil)
     }
 
-    func test_e_catch() {
+    func test_catch() {
         let e1 = expectation()
         Promise<UInt32>{ (_, rejecter) -> Void in
             rejecter(NSError(domain: PMKErrorDomain, code: 123, userInfo: [:]))
@@ -101,7 +97,7 @@ class TestPromise: XCTestCase {
             XCTAssertEqual(err.code, 123)
             e1.fulfill()
         }
-        wait()
+        waitForExpectationsWithTimeout(1, handler: nil)
     }
 
     func test_f_catchAndContinue() {
@@ -114,17 +110,17 @@ class TestPromise: XCTestCase {
             XCTAssertEqual(123, value)
             e1.fulfill()
         }
-        wait()
+        waitForExpectationsWithTimeout(1, handler: nil)
     }
 
-    func test_g_finally() {
+    func test_finally() {
         let e1 = expectation()
         Promise<UInt32>{ (fulfiller, rejecter) in
             rejecter(NSError(domain: PMKErrorDomain, code: 123, userInfo: [:]))
         }.finally {
             e1.fulfill()
         }
-        wait()
+        waitForExpectationsWithTimeout(1, handler: nil)
 
         let e2 = expectation()
         Promise<Int>{ (fulfiller, rejecter) in
@@ -132,7 +128,7 @@ class TestPromise: XCTestCase {
         }.finally {
             e2.fulfill()
         }
-        wait()
+        waitForExpectationsWithTimeout(1, handler: nil)
 
         let e3 = expectation()
         let e4 = expectation()
@@ -145,7 +141,7 @@ class TestPromise: XCTestCase {
             e4.fulfill()
             XCTAssertEqualObjects(err.domain, PMKErrorDomain)
         }
-        wait()
+        waitForExpectationsWithTimeout(1, handler: nil)
 
         let e5 = self.expectationWithDescription("")
         let e6 = self.expectationWithDescription("")
@@ -158,7 +154,7 @@ class TestPromise: XCTestCase {
             e6.fulfill()
             XCTAssertEqual(value, 123)
         }
-        wait()
+        waitForExpectationsWithTimeout(1, handler: nil)
     }
 
 //    func test_008_thenOffVoid() {

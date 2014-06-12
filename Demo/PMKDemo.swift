@@ -35,10 +35,10 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
         }.catch { _ -> CLLocation in
             // If location cannot be determined, default to Chicago
             return CLLocation(latitude: 41.89, longitude: -87.63)
-        }.then{ (ll:CLLocation) -> Promise<Dictionary<String, Any>> in
+        }.then{ (ll:CLLocation) -> Promise<NSDictionary> in
             let (lat, lon) = (ll.coordinate.latitude, ll.coordinate.longitude)
             return NSURLConnection.GET("http://user.net/\(lat)/\(lon)")
-        }.then { (user: Dictionary<String, Any>) -> Promise<Int> in
+        }.then { (user: NSDictionary) -> Promise<Int> in
             let alert = UIAlertView()
             alert.title = "Hi " + (user["name"] as String)
             alert.addButtonWithTitle("Bye")

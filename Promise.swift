@@ -176,7 +176,7 @@ class Promise<T> {
         case .Fulfilled(let value):
             return Promise(value:value as T)
         case .Rejected(let error):
-            return dispatch_promise(to:onQueue){ $1(error) }
+            return dispatch_promise(to:onQueue){ (fulfiller, _) -> Void in fulfiller(body(error)) }
         case .Pending:
             return Promise<T>{ (fulfiller, rejecter) in
                 self._handlers.append {
