@@ -15,11 +15,12 @@ class LocationManager: CLLocationManager, CLLocationManagerDelegate {
     }
 
     init(deferred:(_:Promise<CLLocation>, (CLLocation) -> Void, rejecter: (NSError) -> Void)) {
-        self.fulfiller = deferred.1
-        self.rejecter = deferred.2
+        fulfiller = deferred.1
+        rejecter = deferred.2
         super.init()
-        delegate = self
         PMKRetain(self)
+        delegate = self
+        requestWhenInUseAuthorization()
     }
 }
 
